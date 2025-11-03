@@ -1,0 +1,10 @@
+# docker-compose.prod.yml
+services:
+  redis:
+    container_name: redis-prod
+    volumes:
+      - redis-data-prod:/data
+    command: redis-server --appendonly yes
+
+volumes:
+  redis-data-prod:

@@ -1,0 +1,10 @@
+# docker-compose.dev.yml
+services:
+  redis:
+    container_name: redis-dev
+    volumes:
+      - redis-data-dev:/data
+    command: redis-server --appendonly yes
+
+volumes:
+  redis-data-dev:
