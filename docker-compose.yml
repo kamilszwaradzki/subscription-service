@@ -9,8 +9,8 @@ services:
     depends_on:
       - redis
     environment:
-      REDIS_HOST: redis
-      APP_ENV: ${APP_ENV:-dev}
+      - APP_ENV=dev
+      - DEFAULT_URI=http://localhost
     networks:
       - appnet
 

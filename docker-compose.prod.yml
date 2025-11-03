@@ -5,6 +5,9 @@ services:
     volumes:
       - redis-data-prod:/data
     command: redis-server --appendonly yes
+  app:
+    environment:
+    - APP_ENV=prod
 
 volumes:
   redis-data-prod:

@@ -28,7 +28,7 @@ logs:
 	$(DC) logs
 
 test:
-	$(DC) exec ${PHP_SERVICE} vendor/bin/phpunit --testdox
+	$(DC) exec ${PHP_SERVICE} sh -c "APP_ENV=test vendor/bin/phpunit --testdox"
 
 shell:
 	$(DC) exec ${PHP_SERVICE} sh
