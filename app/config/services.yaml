@@ -19,6 +19,9 @@ services:
             - '../src/DependencyInjection/'
             - '../src/Entity/'
             - '../src/Kernel.php'
+    App\Application\Subscription\Command\ActivateSubscriptionHandler:
+        tags:
+            - { name: messenger.message_handler }
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

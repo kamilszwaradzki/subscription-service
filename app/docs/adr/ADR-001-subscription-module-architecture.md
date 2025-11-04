@@ -1,50 +1,46 @@
 # ADR-001: Architektura modułu subskrypcji
 
 ## Kontekst
-Tworzę moduł subskrypcji w Symfony jako przykład podejścia do projektowania usług backendowych.\
-Cel: pokazać umiejętność tworzenia modularnego kodu z logiką domenową, testami, migracjami, DI, eventami i walidacją.
+Buduję moduł subskrypcji w Symfony. Ma nie być „kolejnym CRUD-em z kontrolera”, tylko przykładem rozsądnej architektury domenowej, którą da się rozwijać bez płaczu.
 
-System ma umożliwiać:
-- tworzenie subskrypcji na poziomie API
-- walidację danych wejściowych
-- logikę aktywacji subskrypcji
-- zapis do bazy
-- emitowanie eventu o utworzeniu subskrypcji
-- przyszłą obsługę płatności i planów taryfowych
+Subskrypcje będą miały:
+- stan i jego tranzycje (pending, active, grace, expired)
+- logikę aktywacji i wygasania
+- integrację z systemem płatności w kolejnych etapach
+- procesy okresowe (odnowienia, retry płatności)
+- eventy
 
+Cel: To nie ma tylko działać. Ma być utrzymywalne.
 ## Decyzja
-Projektuje moduł subskrypcji jako izolowaną część aplikacji z własnymi:
-- encjami
-- DTO / request modelami
-- walidacją
-- warstwą serwisów domenowych
-- eventem `SubscriptionCreated`
-- kontrolerem API
+Wybrałem modularny układ domenowy:
+- logika domenowa w serwisach domenowych
+- tylko adaptery frameworka na brzegu
+- eventy domenowe (np. `SubscriptionCreated`)
+- kontroler jest wejściem, nie mózgiem
+- testy logiki bez bootowania frameworka
 
-Nie pcham logiki do kontrolera. Framework jest adapterem. Logika jest po mojej stronie.
+Krótko: **Symfony to narzędzie, nie właściciel architektury.**
 
-## Opcje rozważane
-1. **Monolityczna struktura** (kontroler robi wszystko)
-   * plusy: szybciej na start  
-   * minusy: brak skalowalności i testowalności
-2. **Symfony clean modular**
-   * plusy: czystość, testowalność
-   * minusy: więcej kodu, ale warto
-3. **CQRS/event sourcing**
-   * plusy: na papierze wygląda mądrze  
-   * minusy: overkill, wyglądałoby jak pozowanie zamiast rozumu
+## Alternatywy
+1. **Logika w kontrolerach**\
+   Zrobiłem tak w poprzednich projektach. Przez pierwsze 3 miesiące było szybciej. Po roku zmiana planów taryfowych to była archeologia w HTTP layer i refaktor „na żywca”.
 
-Wybrana opcja: **2**
+   Szybko tanieje, później drogie jak kredyt we frankach.
+2. **CQRS/event sourcing**\
+   Fajne do wystąpień na meetupach. Tu byłby to teatr dla samego teatru. Problem nie jest aż tak skomplikowany.
 
-## Uzasadnienie
-- pokazuje świadomość architektury
-- łatwe do testowania
-- rozwijalne o płatności, retry, webhooks
-- realny przykład implementacji domeny
+## Uzasadnienie wyboru
+- chcę móc dopiąć webhooks Stripe bez rwanej refaktoryzacji
+- chcę testować logikę domenową bez odpalania pół Symfony
+- zmiany w planach i billing logic mają być lokalne, nie rozlane po kontrolerach
+- minimalizuję ryzyko „rosnącego bagna”
 
-## Konsekwencje
-- większy rozruch projektu, ale finalnie lepsza jakość
-- łatwe dopisywanie kolejnych case study, bo moduł ma realny kształt
+Ta architektura nie jest po to, żeby wyglądać mądrze, tylko żeby **nie przeklinać siebie za pół roku.**
+
+## Koszty
+- więcej plików na start, wolniejszy onboarding
+- muszę konsekwentnie pilnować granic modułu, inaczej to będzie tylko ładny diagram a brud ten sam
+- nie każdą rzecz szybciej się tu robi, ale **każdą rzecz łatwiej zmienia**
 
 ## Status
 W trakcie realizacji
