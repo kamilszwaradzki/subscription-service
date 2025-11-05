@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Subscription;
 
+use Doctrine\ORM\Mapping as ORM;
 use App\Domain\ValueObject\SubscriptionId;
 use App\Domain\ValueObject\UserId;
 use App\Domain\ValueObject\PlanId;
@@ -16,20 +17,38 @@ use App\Domain\Subscription\Event\SubscriptionPaymentFailed;
 use App\Domain\Subscription\Event\SubscriptionRenewed;
 use DateTimeImmutable;
 
+#[ORM\Entity]
+#[ORM\Table(name: 'subscriptions')]
 final class Subscription
 {
+    #[ORM\Id]
+    #[ORM\Column(type: 'subscription_id', length: 36)]
+    private string $id;
+
+    #[ORM\Column(type: 'user_id', length: 36)]
+    private string $userId;
+
+    #[ORM\Column(type: 'plan_id', length: 36)]
+    private string $planId;
+
+    #[ORM\Column(type: 'string', length: 20)]
+    private string $status;
+
+    #[ORM\Column(type: 'datetime_immutable')]
+    private DateTimeImmutable $startDate;
+
+    #[ORM\Column(type: 'datetime_immutable')]
+    private DateTimeImmutable $endDate;
+
+    #[ORM\Column(type: 'integer')]
+    private int $failedAttemptsCount = 0;
+
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    private ?DateTimeImmutable $graceUntil = null;
+
     private array $domainEvents = [];
 
-    private function __construct(
-        private SubscriptionId $id,
-        private UserId $userId,
-        private PlanId $planId,
-        private SubscriptionStatus $status,
-        private DateTimeImmutable $startDate,
-        private DateTimeImmutable $endDate,
-        private int $failedAttemptsCount,
-        private ?DateTimeImmutable $graceUntil,
-    ) {}
+    protected function __construct() {}
 
     public static function create(
         SubscriptionId $id,
@@ -38,105 +57,98 @@ final class Subscription
         DateTimeImmutable $startDate,
         DateTimeImmutable $endDate
     ): self {
-        $subscription = new self(
-            $id,
-            $userId,
-            $planId,
-            SubscriptionStatus::PENDING_ACTIVATION,
-            $startDate,
-            $endDate,
-            0,
-            null
-        );
+        $self = new self();
+        $self->id = (string) $id;
+        $self->userId = (string) $userId;
+        $self->planId = (string) $planId;
+        $self->status = SubscriptionStatus::PENDING_ACTIVATION->value;
+        $self->startDate = $startDate;
+        $self->endDate = $endDate;
+        $self->failedAttemptsCount = 0;
 
-        $subscription->recordEvent(new SubscriptionCreated($id, $userId, $planId));
-        return $subscription;
+        $self->recordEvent(new SubscriptionCreated($id, $userId, $planId));
+
+        return $self;
     }
 
     public function activate(): void
     {
-        if ($this->status !== SubscriptionStatus::PENDING_ACTIVATION) {
+        if ($this->status !== SubscriptionStatus::PENDING_ACTIVATION->value) {
             throw new \LogicException('Cannot activate unless pending.');
         }
 
-        $this->status = SubscriptionStatus::ACTIVE;
-        $this->recordEvent(new SubscriptionActivated($this->id));
+        $this->status = SubscriptionStatus::ACTIVE->value;
+        $this->recordEvent(new SubscriptionActivated($this->getId()));
     }
 
     public function failPayment(): void
     {
-        if ($this->status !== SubscriptionStatus::ACTIVE) {
+        if ($this->status !== SubscriptionStatus::ACTIVE->value) {
             throw new \LogicException('Payment fail only applies when active.');
         }
 
         $this->failedAttemptsCount++;
-        $this->recordEvent(new SubscriptionPaymentFailed($this->id, $this->failedAttemptsCount));
+        $this->recordEvent(new SubscriptionPaymentFailed($this->getId(), $this->failedAttemptsCount));
     }
 
     public function enterGracePeriod(DateTimeImmutable $until): void
     {
-        if ($this->status !== SubscriptionStatus::ACTIVE) {
+        if ($this->status !== SubscriptionStatus::ACTIVE->value) {
             throw new \LogicException('Grace only from active.');
         }
 
-        $this->status = SubscriptionStatus::GRACE_PERIOD;
+        $this->status = SubscriptionStatus::GRACE_PERIOD->value;
         $this->graceUntil = $until;
-        $this->recordEvent(new SubscriptionGracePeriodStarted($this->id, $until));
+        $this->recordEvent(new SubscriptionGracePeriodStarted($this->getId(), $until));
     }
 
     public function expire(): void
     {
-        if (!in_array($this->status, [SubscriptionStatus::GRACE_PERIOD, SubscriptionStatus::ACTIVE], true)) {
+        if (!in_array($this->status, [
+            SubscriptionStatus::GRACE_PERIOD->value,
+            SubscriptionStatus::ACTIVE->value
+        ], true)) {
             throw new \LogicException('Expire only after grace or active.');
         }
 
-        $this->status = SubscriptionStatus::EXPIRED;
-        $this->recordEvent(new SubscriptionExpired($this->id));
+        $this->status = SubscriptionStatus::EXPIRED->value;
+        $this->recordEvent(new SubscriptionExpired($this->getId()));
     }
 
     public function cancel(): void
     {
-        if ($this->status === SubscriptionStatus::EXPIRED) {
+        if ($this->status === SubscriptionStatus::EXPIRED->value) {
             throw new \LogicException('Cannot cancel expired.');
         }
 
-        $this->status = SubscriptionStatus::CANCELED;
-        $this->recordEvent(new SubscriptionCanceled($this->id));
+        $this->status = SubscriptionStatus::CANCELED->value;
+        $this->recordEvent(new SubscriptionCanceled($this->getId()));
     }
 
     public function renew(DateTimeImmutable $newEndDate): void
     {
-        if ($this->status !== SubscriptionStatus::ACTIVE) {
+        if ($this->status !== SubscriptionStatus::ACTIVE->value) {
             throw new \LogicException('Can only renew active subscription.');
         }
 
         $this->endDate = $newEndDate;
         $this->failedAttemptsCount = 0;
-        $this->recordEvent(new SubscriptionRenewed($this->id, $newEndDate));
-    }
-
-    public function getDomainEvents(): array
-    {
-        return $this->domainEvents;
-    }
-
-    public function clearDomainEvents(): void
-    {
-        $this->domainEvents = [];
+        $this->recordEvent(new SubscriptionRenewed($this->getId(), $newEndDate));
     }
 
     private function recordEvent(object $event): void
     {
         $this->domainEvents[] = $event;
     }
+
     public function getId(): SubscriptionId
     {
-        return $this->id;
+        return SubscriptionId::fromString($this->id);
     }
 
     public function getStatus(): SubscriptionStatus
     {
-        return $this->status;
+        return SubscriptionStatus::from($this->status);
     }
 
     public function getEndDate(): DateTimeImmutable
@@ -147,5 +159,15 @@ final class Subscription
     public function getFailedAttemptsCount(): int
     {
         return $this->failedAttemptsCount;
+    }
+
+    public function getDomainEvents(): array
+    {
+        return $this->domainEvents;
+    }
+
+    public function clearDomainEvents(): void
+    {
+        $this->domainEvents = [];
     }
 }

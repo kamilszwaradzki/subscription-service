@@ -1,0 +1,7 @@
+doctrine:
+    dbal:
+        types:
+            subscription_id: App\Infrastructure\Doctrine\Type\SubscriptionIdType
+            user_id: App\Infrastructure\Doctrine\Type\UserIdType
+            plan_id: App\Infrastructure\Doctrine\Type\PlanIdType
+            subscription_status: App\Infrastructure\Doctrine\Type\SubscriptionStatusType

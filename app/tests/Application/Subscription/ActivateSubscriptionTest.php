@@ -31,11 +31,11 @@ class ActivateSubscriptionTest extends TestCase
             new DateTimeImmutable('+1 month')
         );
 
-        $repo->save($subscription);
+        $repo->add($subscription);
 
         $handler(new ActivateSubscriptionCommand($id));
 
-        $loaded = $repo->getById($id);
+        $loaded = $repo->get($id);
 
         $this->assertEquals(SubscriptionStatus::ACTIVE, $loaded->getStatus());
     }

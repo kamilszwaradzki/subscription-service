@@ -9,9 +9,12 @@ use Ramsey\Uuid\UuidInterface;
 
 final class SubscriptionId
 {
-    private function __construct(
-        private readonly UuidInterface $value
-    ) {}
+    private UuidInterface $uuid;
+
+    private function __construct(string|UuidInterface|null $uuid = null)
+    {
+        $this->uuid = $uuid instanceof UuidInterface ? $uuid : ($uuid ? Uuid::fromString($uuid) : Uuid::uuid4());
+    }
 
     public static function fromString(string $id): self
     {
@@ -25,7 +28,7 @@ final class SubscriptionId
 
     public function value(): string
     {
-        return $this->value->toString();
+        return $this->uuid->toString();
     }
 
     public function __toString(): string

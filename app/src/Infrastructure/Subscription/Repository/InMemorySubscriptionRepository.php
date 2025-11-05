@@ -7,18 +7,19 @@ namespace App\Infrastructure\Subscription\Repository;
 use App\Domain\Subscription\Subscription;
 use App\Domain\ValueObject\SubscriptionId;
 use App\Domain\Subscription\SubscriptionRepository;
+use App\Domain\ValueObject\UserId;
 
 final class InMemorySubscriptionRepository implements SubscriptionRepository
 {
     /** @var array<string, Subscription> */
     private array $items = [];
 
-    public function save(Subscription $subscription): void
+    public function add(Subscription $subscription): void
     {
         $this->items[(string)$subscription->getId()] = $subscription;
     }
 
-    public function getById(SubscriptionId $id): Subscription
+    public function get(SubscriptionId $id): Subscription
     {
         $key = (string)$id;
 
@@ -27,5 +28,25 @@ final class InMemorySubscriptionRepository implements SubscriptionRepository
         }
 
         return $this->items[$key];
+    }
+
+    public function update(Subscription $subscription): void
+    {
+        throw new \RuntimeException("update method is not implemented.");
+    }
+
+    public function findByUserId(UserId $userId): ?Subscription
+    {
+        throw new \RuntimeException("findByUserId method is not implemented.");
+    }
+
+    public function findDueForRenewal(\DateTimeImmutable $currentTime): array
+    {
+        throw new \RuntimeException("findDueForRenewal method is not implemented.");
+    }
+
+    public function findExpiringGracePeriods(\DateTimeImmutable $currentTime): array
+    {
+        throw new \RuntimeException("findExpiringGracePeriods method is not implemented.");
     }
 }

@@ -1,0 +1,3 @@
+services:
+  App\Domain\Subscription\SubscriptionRepository:
+    alias: App\Infrastructure\Subscription\Repository\InMemorySubscriptionRepository

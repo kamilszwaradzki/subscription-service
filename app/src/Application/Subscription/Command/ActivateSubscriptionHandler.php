@@ -14,8 +14,8 @@ final class ActivateSubscriptionHandler
 
     public function __invoke(ActivateSubscriptionCommand $command): void
     {
-        $subscription = $this->repository->getById($command->id);
+        $subscription = $this->repository->get($command->id);
         $subscription->activate();
-        $this->repository->save($subscription);
+        $this->repository->add($subscription);
     }
 }

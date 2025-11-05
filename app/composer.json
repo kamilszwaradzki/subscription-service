@@ -7,6 +7,9 @@
         "php": ">=8.2",
         "ext-ctype": "*",
         "ext-iconv": "*",
+        "doctrine/annotations": "*",
+        "doctrine/cache": "*",
+        "doctrine/orm": "*",
         "ramsey/uuid": "*",
         "symfony/console": "7.0.*",
         "symfony/dotenv": "7.0.*",
@@ -16,6 +19,7 @@
         "symfony/yaml": "7.0.*"
     },
     "require-dev": {
+        "doctrine/doctrine-fixtures-bundle": "*",
         "phpunit/phpunit": "^12.4",
         "symfony/browser-kit": "7.0.*",
         "symfony/css-selector": "7.0.*"
