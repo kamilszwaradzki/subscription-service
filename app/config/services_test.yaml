@@ -1,3 +1,9 @@
 services:
   App\Domain\Subscription\SubscriptionRepository:
     alias: App\Infrastructure\Subscription\Repository\InMemorySubscriptionRepository
+  test.subscription_repository:
+      alias: App\Infrastructure\Subscription\Repository\DoctrineSubscriptionRepository
+      public: true
+  App\Application\Subscription\Command\SucceedSubscriptionPaymentHandler:
+      arguments:
+          $repo: '@App\Infrastructure\Subscription\DoctrineSubscriptionRepository'

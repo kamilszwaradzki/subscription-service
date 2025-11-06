@@ -32,7 +32,11 @@ final class InMemorySubscriptionRepository implements SubscriptionRepository
 
     public function update(Subscription $subscription): void
     {
-        throw new \RuntimeException("update method is not implemented.");
+        $key = (string)$subscription->getId();
+        if (!isset($this->items[$key])) {
+            throw new \RuntimeException("Subscription not found: $key");
+        }
+        $this->items[(string)$subscription->getId()] = $subscription;
     }
 
     public function findByUserId(UserId $userId): ?Subscription

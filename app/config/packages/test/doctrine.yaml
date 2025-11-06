@@ -1,7 +1,21 @@
 doctrine:
     dbal:
+        url: '%env(resolve:DATABASE_URL)%'
+        driver: 'pdo_sqlite'
+        memory: false        # jeśli chcesz plik w var/, true = tylko RAM
+        path: '%kernel.project_dir%/var/test.db'
         types:
             subscription_id: App\Infrastructure\Doctrine\Type\SubscriptionIdType
             user_id: App\Infrastructure\Doctrine\Type\UserIdType
             plan_id: App\Infrastructure\Doctrine\Type\PlanIdType
             subscription_status: App\Infrastructure\Doctrine\Type\SubscriptionStatusType
+    orm:
+        auto_generate_proxy_classes: true
+        enable_lazy_ghost_objects: true
+        auto_mapping: true
+        mappings:
+            Domain:
+                is_bundle: false
+                type: attribute
+                dir: '%kernel.project_dir%/src/Domain'
+                prefix: 'App\Domain'

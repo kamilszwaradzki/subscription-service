@@ -15,6 +15,7 @@ use App\Domain\Subscription\Event\SubscriptionExpired;
 use App\Domain\Subscription\Event\SubscriptionGracePeriodStarted;
 use App\Domain\Subscription\Event\SubscriptionPaymentFailed;
 use App\Domain\Subscription\Event\SubscriptionRenewed;
+use App\Domain\Subscription\Event\SubscriptionTerminated;
 use DateTimeImmutable;
 
 #[ORM\Entity]
@@ -83,12 +84,14 @@ final class Subscription
 
     public function failPayment(): void
     {
-        if ($this->status !== SubscriptionStatus::ACTIVE->value) {
-            throw new \LogicException('Payment fail only applies when active.');
-        }
-
         $this->failedAttemptsCount++;
-        $this->recordEvent(new SubscriptionPaymentFailed($this->getId(), $this->failedAttemptsCount));
+        if ($this->failedAttemptsCount > 3) {
+            $this->status = SubscriptionStatus::PAYMENT_FAILED_PERMANENTLY->value;
+            $this->recordEvent(new SubscriptionTerminated($this->getId(), $this->status));
+        } else {
+            $this->status = SubscriptionStatus::PAYMENT_FAILED->value;
+            $this->recordEvent(new SubscriptionPaymentFailed($this->getId(), $this->failedAttemptsCount));
+        }
     }
 
     public function enterGracePeriod(DateTimeImmutable $until): void
@@ -169,5 +172,21 @@ final class Subscription
     public function clearDomainEvents(): void
     {
         $this->domainEvents = [];
+    }
+
+    public function isLocked(): bool
+    {
+        return $this->getStatus() === SubscriptionStatus::PAYMENT_FAILED_PERMANENTLY;
+    }
+
+    public function markPaymentSucceeded(): void
+    {
+        $this->failedAttemptsCount = 0;
+        $this->status = SubscriptionStatus::PENDING_ACTIVATION->value;
+    }
+
+    public function isPaymentSucceeded()
+    {
+        return $this->getStatus() === SubscriptionStatus::PENDING_ACTIVATION;
     }
 }

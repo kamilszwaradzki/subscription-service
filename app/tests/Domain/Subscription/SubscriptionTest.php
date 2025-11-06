@@ -57,16 +57,13 @@ class SubscriptionTest extends TestCase
         $this->assertEquals($initialAttempts + 1, $subscription->getFailedAttemptsCount());
     }
 
-    public function test_renew_resets_failed_attempts_and_extends_end_date(): void
+    public function test_renew_only_works_when_active(): void
     {
         $subscription = $this->createActiveSubscription();
         $subscription->failPayment();
-        $newEndDate = new DateTimeImmutable('+2 months');
 
-        $subscription->renew($newEndDate);
-
-        $this->assertEquals(0, $subscription->getFailedAttemptsCount());
-        $this->assertEquals($newEndDate, $subscription->getEndDate());
+        $this->expectException(\LogicException::class);
+        $subscription->renew(new DateTimeImmutable('+2 months'));
     }
 
     private function createPendingSubscription(): Subscription
